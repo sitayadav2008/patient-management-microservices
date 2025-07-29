@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth-service
+    depends_on:
+      - auth-service-db
+#    ports:
+#      - "4005:4005"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-service-db:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: Sita2008@
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: bXlTdXBlclNlY3VyZUpXVFNlY3JldEtleTIwMjUhQCM=
+    #      SPRING_SQL_INIT_MODE: always
+    networks:
+      - backend
+
+
+  # ===================== PostgreSQL for Patient =====================
+  patient-db:
+    image: postgres:15
+    container_name: patient-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: patient_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Sita2008@
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  # ===================== PostgreSQL for Auth =====================
+  auth-service-db:
+    image: postgres:15
+    container_name: auth-service-db
+    ports:
+      - "5001:5432"  # External:Internal
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Sita2008@
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    networks:
+      - backend  # ✅ Changed from "auth-network" to "backend" to simplify communication
+
+  # ===================== Billing Service =====================
+  billing-service:
+    build:
+      context: ./billing-service
+    container_name: billing-service
+    ports:
+      - "9001:9001"
+    networks:
+      - backend
+
+  # ===================== Patient Service =====================
+  patient-service:
+    build:
+      context: ./patient-service
+    container_name: patient-service
+#    ports:
+#      - "4000:4000"
+    depends_on:
+      - patient-db
+      - billing-service
+      - kafka
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://patient-db:5432/patient_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: Sita2008@
+      BILLING_SERVICE_ADDRESS: billing-service
+      BILLING_SERVICE_GRPC_PORT: 9001
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - backend
+
+  # ===================== API Gateway =====================
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "4004:4004"
+    depends_on:
+      - kafka
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      AUTH_SERVICE_URL: http://auth-service:4005
+    networks:
+      - backend
+
+  # ===================== Kafka =====================
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    networks:
+      - backend
+
+  # ===================== Analytics Service =====================
+  analytics-service:
+    build:
+      context: ./analytics-service
+    container_name: analytics-service
+    ports:
+      - "4002:4002"
+    depends_on:
+      - kafka
+    environment:
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - backend
+
+# ===================== VOLUMES =====================
+volumes:
+  postgres_data:
+  auth_db_data:
+
+# ===================== NETWORKS =====================
+networks:
+  backend:

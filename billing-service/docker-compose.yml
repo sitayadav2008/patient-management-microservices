@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+
+  billing-db:
+    image: postgres:15
+    container_name: billing-db
+    environment:
+      POSTGRES_DB: billing_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Sita2008@
+    ports:
+      - "5433:5432"  # Use 5433 if you want to connect from outside Docker
+    volumes:
+      - billing_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  billing-service:
+    build: .
+    container_name: billing-service
+    ports:
+      - "4001:4001"
+    depends_on:
+      - billing-db
+    networks:
+      - backend
+
+volumes:
+  billing_data:
+
+networks:
+  backend:
