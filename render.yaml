@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: auth-service
+    env: docker
+    repo: https://github.com/sitayadav2008/patient-management-microservices
+    branch: main
+    dockerContext: ./auth-service
+    plan: free
+    autoDeploy: true
+
+  - type: web
+    name: patient-service
+    env: docker
+    repo: https://github.com/sitayadav2008/patient-management-microservices
+    branch: main
+    dockerContext: ./patient-service
+    plan: free
+    autoDeploy: true
+
+databases:
+  - name: auth-service-db
+    plan: free
+    postgresMajorVersion: 15
+
+  - name: patient-db
+    plan: free
+    postgresMajorVersion: 15
