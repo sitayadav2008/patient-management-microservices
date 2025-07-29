@@ -5,6 +5,7 @@ services:
     repo: https://github.com/sitayadav2008/patient-management-microservices
     branch: main
     dockerContext: ./auth-service
+    dockerfilePath: ./auth-service/Dockerfile   # ✅ Add this
     plan: free
     autoDeploy: true
 
@@ -14,6 +15,7 @@ services:
     repo: https://github.com/sitayadav2008/patient-management-microservices
     branch: main
     dockerContext: ./patient-service
+    dockerfilePath: ./patient-service/Dockerfile   # ✅ Add this
     plan: free
     autoDeploy: true
 
